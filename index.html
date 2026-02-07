@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Commande</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Utilisation d'une police Google Fonts pour un look moderne -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         /* --- VARIABLES CSS --- */
         :root {
-            --tg-theme-bg-color: #f5f5f7; /* Gris très clair par défaut si le thème Telegram ne charge pas */
+            --tg-theme-bg-color: #f5f5f7;
             --tg-theme-text-color: #1d1d1f;
-            --tg-theme-button-color: #007aff; /* Bleu style iOS */
+            --tg-theme-button-color: #007aff;
             --tg-theme-button-text-color: #ffffff;
             --tg-theme-secondary-bg-color: #ffffff;
             --tg-theme-hint-color: #86868b;
@@ -22,14 +21,13 @@
             --nav-height: 70px;
         }
 
-        /* --- RESET & BASE --- */
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             margin: 0;
             padding: 0;
             background-color: var(--tg-theme-bg-color);
             color: var(--tg-theme-text-color);
-            padding-bottom: calc(var(--nav-height) + 20px); /* Espace pour la nav barre */
+            padding-bottom: calc(var(--nav-height) + 20px);
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -73,9 +71,9 @@
             gap: 10px;
             padding-bottom: 10px;
             margin-bottom: 20px;
-            scrollbar-width: none; /* Firefox */
+            scrollbar-width: none;
         }
-        .category-scroll::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+        .category-scroll::-webkit-scrollbar { display: none; }
 
         .category-chip {
             background: var(--tg-theme-secondary-bg-color);
@@ -97,14 +95,34 @@
         .product-card {
             background: var(--tg-theme-secondary-bg-color);
             border-radius: var(--border-radius);
-            padding: 15px;
+            padding: 0; /* Padding géré à l'intérieur pour l'image */
             margin-bottom: 15px;
+            display: flex;
+            flex-direction: column; /* Empiler image et contenu */
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        
+        .product-image-container {
+            width: 100%;
+            height: 200px;
+            background-color: #eee;
+            position: relative;
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* L'image remplit le cadre sans être déformée */
+        }
+
+        .product-details {
+            padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: var(--shadow);
-            transition: transform 0.1s;
         }
+        
         .product-info h3 { margin: 0 0 5px 0; font-size: 16px; }
         .product-price { color: var(--tg-theme-hint-color); font-size: 14px; }
         
@@ -120,22 +138,36 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            flex-shrink: 0;
+            margin-left: 10px;
         }
 
         /* --- PANIER --- */
         .cart-item {
             background: var(--tg-theme-secondary-bg-color);
-            padding: 15px;
+            padding: 10px;
             border-radius: var(--border-radius);
             margin-bottom: 10px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 10px;
         }
+        
+        .cart-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .cart-info { flex-grow: 1; }
+        .cart-info h4 { margin: 0 0 4px 0; font-size: 14px; }
+        .cart-info span { font-size: 12px; color: var(--tg-theme-hint-color); }
+
         .qty-controls {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
             background: var(--tg-theme-bg-color);
             padding: 5px 10px;
             border-radius: 20px;
@@ -187,8 +219,36 @@
             box-sizing: border-box;
             font-size: 16px;
         }
+        
+        /* Upload Image Style */
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-upload input[type="file"] {
+            display: none;
+        }
+        .file-upload-label {
+            display: block;
+            padding: 12px;
+            background: var(--tg-theme-secondary-bg-color);
+            border: 1px dashed var(--tg-theme-button-color);
+            border-radius: 12px;
+            text-align: center;
+            color: var(--tg-theme-button-color);
+            cursor: pointer;
+        }
+        .preview-img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
 
-        /* --- BARRE DE NAVIGATION (BOTTOM BAR) --- */
+        /* --- BARRE DE NAVIGATION --- */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -201,10 +261,11 @@
             align-items: center;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
             z-index: 100;
-            padding-bottom: env(safe-area-inset-bottom); /* Pour iPhone X+ */
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .nav-item {
+            position: relative; /* Pour positionner le badge */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -228,6 +289,24 @@
         .nav-item.active {
             color: var(--tg-theme-button-color);
         }
+
+        /* --- BADGE (PASTILLE) --- */
+        .badge {
+            position: absolute;
+            top: 5px;
+            right: 25%; /* Centré sur l'icône */
+            background-color: #ff3b30;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 18px;
+            text-align: center;
+            display: none; /* Caché par défaut */
+            border: 2px solid var(--tg-theme-secondary-bg-color); /* Bordure pour séparer de l'icône */
+            z-index: 101;
+        }
     </style>
 </head>
 <body>
@@ -235,7 +314,6 @@
     <!-- HEADER -->
     <header>
         <h1 id="page-title">Menu</h1>
-        <div id="cart-badge" style="display:none; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:12px; display:flex; align-items:center; justify-content:center;">0</div>
     </header>
 
     <!-- LOADING -->
@@ -252,12 +330,8 @@
         
         <!-- ONGLET MENU -->
         <div id="menu-tab">
-            <div class="category-scroll" id="categories-list">
-                <!-- Les catégories seront injectées ici -->
-            </div>
-            <div id="products-list">
-                <!-- Les produits seront injectés ici -->
-            </div>
+            <div class="category-scroll" id="categories-list"></div>
+            <div id="products-list"></div>
         </div>
 
         <!-- ONGLET PANIER -->
@@ -265,13 +339,12 @@
             <div id="cart-items-container">
                 <p style="text-align:center; color:var(--tg-theme-hint-color); margin-top:50px;">Votre panier est vide</p>
             </div>
-            
             <div class="checkout-section hidden" id="checkout-area">
                 <div class="total-row">
                     <span>Total</span>
                     <span id="cart-total">0.00 €</span>
                 </div>
-                <p style="font-size:12px; color:var(--tg-theme-hint-color); margin-bottom:15px;">Paiement à la livraison / En magasin</p>
+                <p style="font-size:12px; color:var(--tg-theme-hint-color); margin-bottom:15px;">Paiement à la livraison</p>
                 <button class="btn-checkout" onclick="sendOrder()">Valider la commande</button>
             </div>
         </div>
@@ -279,6 +352,16 @@
         <!-- ONGLET ADMIN -->
         <div id="admin-tab" class="hidden">
             <h2 style="margin-top:0">Ajouter un produit</h2>
+            <div class="form-group">
+                <label style="display:block; margin-bottom:5px; font-size:14px; color:var(--tg-theme-hint-color)">Photo du produit</label>
+                <div class="file-upload">
+                    <label for="product-image" class="file-upload-label">
+                        Choisir une photo
+                    </label>
+                    <input type="file" id="product-image" accept="image/*" onchange="previewImage(event)">
+                </div>
+                <img id="image-preview" class="preview-img" alt="Aperçu">
+            </div>
             <div class="form-group">
                 <input type="text" id="new-name" class="form-input" placeholder="Nom du produit">
             </div>
@@ -292,7 +375,7 @@
                     <option value="Dessert">Dessert</option>
                 </select>
             </div>
-            <button class="btn-checkout" onclick="addProduct()">Ajouter</button>
+            <button class="btn-checkout" onclick="addProduct()">Ajouter le produit</button>
             
             <h3 style="margin-top:30px">Liste actuelle</h3>
             <div id="admin-products-list"></div>
@@ -300,7 +383,7 @@
 
     </div>
 
-    <!-- BARRE DE NAVIGATION EN BAS -->
+    <!-- BARRE DE NAVIGATION -->
     <nav class="bottom-nav">
         <a class="nav-item active" onclick="switchTab('menu')" id="nav-menu">
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -309,6 +392,7 @@
         <a class="nav-item" onclick="switchTab('cart')" id="nav-cart">
             <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
             <span>Panier</span>
+            <div id="cart-badge" class="badge">0</div>
         </a>
         <a class="nav-item" onclick="switchTab('admin')" id="nav-admin" style="display:none;">
             <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
@@ -317,13 +401,12 @@
     </nav>
 
     <script>
-        // --- INITIALISATION ---
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.BackButton.show();
         tg.BackButton.onClick(() => tg.close());
 
-        // Appliquer le thème Telegram aux variables CSS
+        // Thème
         document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#f5f5f7');
         document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#1d1d1f');
         document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#007aff');
@@ -334,27 +417,26 @@
         let products = [];
         let cart = {};
         let isAdmin = false;
+        let currentImageBase64 = null; // Stockage temporaire de l'image uploadée
 
-        // --- CHARGEMENT DES DONNÉES ---
         window.onload = async function() {
             try {
-                // SIMULATION DES DONNÉES (Comme dans l'étape précédente)
+                // Données simulées avec images par défaut
                 products = [
-                    {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food"},
-                    {id: 2, name: "Burger Deluxe", price: 12.50, category: "Food"},
-                    {id: 3, name: "Coca Cola", price: 2.50, category: "Drinks"},
-                    {id: 4, name: "Orange Juice", price: 3.00, category: "Drinks"},
-                    {id: 5, name: "Tiramisu", price: 5.00, category: "Dessert"}
+                    {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food", image: "https://picsum.photos/seed/pizza/400/300"},
+                    {id: 2, name: "Burger Deluxe", price: 12.50, category: "Food", image: "https://picsum.photos/seed/burger/400/300"},
+                    {id: 3, name: "Coca Cola", price: 2.50, category: "Drinks", image: "https://picsum.photos/seed/coke/400/300"},
+                    {id: 4, name: "Orange Juice", price: 3.00, category: "Drinks", image: "https://picsum.photos/seed/juice/400/300"},
+                    {id: 5, name: "Tiramisu", price: 5.00, category: "Dessert", image: "https://picsum.photos/seed/tira/400/300"}
                 ];
                 
                 const userId = tg.initDataUnsafe.user?.id;
-                // Remplacez 123456789 par votre ID Admin
+                // Remplacez par votre ID
                 if (userId === 123456789) { 
                     isAdmin = true;
                     document.getElementById('nav-admin').style.display = 'flex';
                 }
 
-                // Masquer le loader et afficher le contenu
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
                 
@@ -368,19 +450,15 @@
             }
         };
 
-        // --- NAVIGATION ---
         function switchTab(tabName) {
-            // Gérer les classes actives des boutons
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById(`nav-${tabName}`).classList.add('active');
 
-            // Gérer l'affichage des sections
             document.getElementById('menu-tab').classList.add('hidden');
             document.getElementById('cart-tab').classList.add('hidden');
             document.getElementById('admin-tab').classList.add('hidden');
             document.getElementById(`${tabName}-tab`).classList.remove('hidden');
 
-            // Mettre à jour le titre
             const titles = { 'menu': 'Menu', 'cart': 'Mon Panier', 'admin': 'Administration' };
             document.getElementById('page-title').innerText = titles[tabName];
 
@@ -415,12 +493,20 @@
             filtered.forEach(p => {
                 const div = document.createElement('div');
                 div.className = 'product-card';
+                // Utilisation de l'image du produit ou une image par défaut si null
+                const imgUrl = p.image || "https://picsum.photos/seed/default/400/300";
+                
                 div.innerHTML = `
-                    <div class="product-info">
-                        <h3>${p.name}</h3>
-                        <div class="product-price">${p.price.toFixed(2)} €</div>
+                    <div class="product-image-container">
+                        <img src="${imgUrl}" class="product-image" alt="${p.name}">
                     </div>
-                    <button class="btn-add" onclick="addToCart(${p.id})">+</button>
+                    <div class="product-details">
+                        <div class="product-info">
+                            <h3>${p.name}</h3>
+                            <div class="product-price">${p.price.toFixed(2)} €</div>
+                        </div>
+                        <button class="btn-add" onclick="addToCart(${p.id})">+</button>
+                    </div>
                 `;
                 container.appendChild(div);
             });
@@ -439,7 +525,7 @@
             const badge = document.getElementById('cart-badge');
             if (count > 0) {
                 badge.innerText = count;
-                badge.style.display = 'flex';
+                badge.style.display = 'block';
             } else {
                 badge.style.display = 'none';
             }
@@ -458,12 +544,15 @@
                     const product = products.find(p => p.id == id);
                     if (product) {
                         total += product.price * qty;
+                        const imgUrl = product.image || "https://picsum.photos/seed/default/100/100";
+                        
                         const div = document.createElement('div');
                         div.className = 'cart-item';
                         div.innerHTML = `
-                            <div>
-                                <strong>${product.name}</strong>
-                                <div style="font-size:12px; color:var(--tg-theme-hint-color)">${product.price.toFixed(2)} €</div>
+                            <img src="${imgUrl}" class="cart-img" alt="${product.name}">
+                            <div class="cart-info">
+                                <h4>${product.name}</h4>
+                                <span>${product.price.toFixed(2)} €</span>
                             </div>
                             <div class="qty-controls">
                                 <button class="qty-btn" onclick="changeQty(${id}, -1)">-</button>
@@ -511,7 +600,26 @@
             tg.close();
         }
 
-        // --- LOGIQUE ADMIN ---
+        // --- LOGIQUE ADMIN & IMAGE ---
+        
+        // Fonction pour prévisualiser l'image et la convertir en Base64
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Afficher l'aperçu
+                    const preview = document.getElementById('image-preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    
+                    // Stocker en base64 pour l'envoi
+                    currentImageBase64 = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         function addProduct() {
             const name = document.getElementById('new-name').value;
             const price = parseFloat(document.getElementById('new-price').value);
@@ -519,7 +627,11 @@
             
             if (name && price) {
                 const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-                const newProduct = { id: newId, name, price, category };
+                
+                // Utiliser l'image uploadée ou une image par défaut
+                const finalImage = currentImageBase64 || `https://picsum.photos/seed/${newId}/400/300`;
+
+                const newProduct = { id: newId, name, price, category, image: finalImage };
                 products.push(newProduct);
                 
                 tg.sendData(JSON.stringify({ type: 'add_product', product: newProduct }));
@@ -527,8 +639,11 @@
                 // Reset form
                 document.getElementById('new-name').value = '';
                 document.getElementById('new-price').value = '';
+                document.getElementById('product-image').value = '';
+                document.getElementById('image-preview').style.display = 'none';
+                currentImageBase64 = null;
                 
-                renderCategories(); // Mettre à jour si nouvelle catégorie
+                renderCategories();
                 renderAdminList();
                 tg.showPopup({message: "Produit ajouté !"});
             }
@@ -539,8 +654,15 @@
             container.innerHTML = '';
             products.forEach(p => {
                 const div = document.createElement('div');
-                div.style.cssText = "padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;";
-                div.innerHTML = `<span>${p.name}</span> <span>${p.price}€</span>`;
+                div.style.cssText = "padding:10px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px;";
+                const imgUrl = p.image || "https://picsum.photos/seed/default/50/50";
+                div.innerHTML = `
+                    <img src="${imgUrl}" style="width:40px; height:40px; border-radius:4px; object-fit:cover;">
+                    <div style="flex-grow:1;">
+                        <strong>${p.name}</strong> <span style="font-size:12px; color:#888">(${p.category})</span>
+                    </div>
+                    <span>${p.price}€</span>
+                `;
                 container.appendChild(div);
             });
         }
