@@ -39,6 +39,7 @@
             justify-content: center;
             height: 100vh;
             color: var(--tg-theme-hint-color);
+            transition: opacity 0.5s;
         }
 
         /* --- HEADER --- */
@@ -413,36 +414,66 @@
     </nav>
 
     <script>
-        // --- INITIALISATION ---
-        let tg;
+        // --- INITIALISATION ROBUSTE ---
+        let tg = null;
+        let isTelegramReady = false;
+
+        // 1. On essaie de charger Telegram, mais on ne bloque pas si ça échoue
         try {
-            tg = window.Telegram.WebApp;
-            tg.expand();
-            if(tg.BackButton) {
-                tg.BackButton.show();
-                tg.BackButton.onClick(() => tg.close());
+            if (window.Telegram && window.Telegram.WebApp) {
+                tg = window.Telegram.WebApp;
+                tg.expand();
+                
+                // Configuration du bouton retour
+                if (tg.BackButton) {
+                    tg.BackButton.show();
+                    tg.BackButton.onClick(() => tg.close());
+                }
+                
+                // Application du thème
+                if (tg.themeParams) {
+                    document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#f5f5f7');
+                    document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#1d1d1f');
+                    document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#007aff');
+                    document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+                    document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#ffffff');
+                    document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#86868b');
+                }
+                
+                isTelegramReady = true;
+            } else {
+                console.warn("Script Telegram non détecté.");
             }
         } catch (e) {
-            console.warn("Telegram WebApp script not loaded or blocked. Running in standalone mode.");
-            tg = null;
+            console.error("Erreur initialisation Telegram:", e);
         }
 
-        // Thème
-        if (tg && tg.themeParams) {
-            document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#f5f5f7');
-            document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#1d1d1f');
-            document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#007aff');
-            document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
-            document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#ffffff');
-            document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint-color || '#86868b');
+        // 2. Sécurité : Force l'affichage après 1 seconde si Telegram n'a pas répondu
+        setTimeout(() => {
+            if (!isTelegramReady) {
+                console.log("Timeout: Affichage forcé sans Telegram.");
+                initApp();
+            }
+        }, 1000);
+
+        // 3. Si Telegram est prêt, on lance tout de suite
+        if (isTelegramReady) {
+            // On attend un petit peu que le DOM soit stable (optionnel mais recommandé)
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initApp);
+            } else {
+                initApp();
+            }
         }
 
+        // --- VARIABLES GLOBALES ---
         let products = [];
         let cart = {};
         let isAdmin = false;
         let currentImageBase64 = null;
 
-        window.onload = function() {
+        // --- FONCTION D'INITIALISATION PRINCIPALE ---
+        function initApp() {
             // Données par défaut (seront écrasées si on arrive à les charger depuis une source externe plus tard)
             products = [
                 {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food", image: "https://picsum.photos/seed/pizza/400/300"},
@@ -470,13 +501,14 @@
                 console.error("Erreur vérification admin:", e);
             }
 
+            // Affichage du contenu
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
             
             renderCategories();
             renderProducts();
             updateCartBadge();
-        };
+        }
 
         function switchTab(tabName) {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
