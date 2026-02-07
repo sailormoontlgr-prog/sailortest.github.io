@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 10px; background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
+        .hidden { display: none; }
+        .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); margin-right: 5px; border-radius: 5px;}
+        .category-btn { display: block; width: 100%; margin: 5px 0; padding: 10px; background: var(--tg-theme-secondary-bg-color); border: none; color: var(--tg-theme-text-color); text-align: left; }
+        .product-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .cart-item { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .btn-small { padding: 5px 10px; cursor: pointer; }
+        .checkout-btn { width: 100%; padding: 15px; background: var(--tg-theme-button-color); color: white; border: none; font-size: 16px; margin-top: 20px; }
+        input, select { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Tabs -->
+    <div id="nav-tabs">
+        <button class="tab-btn" onclick="showTab('menu')">Menu</button>
+        <button class="tab-btn" onclick="showTab('cart')">Cart</button>
+        <button class="tab-btn" id="admin-tab-btn" onclick="showTab('admin')" style="display:none;">Admin</button>
+    </div>
+
+    <!-- MENU TAB -->
+    <div id="menu-tab">
+        <h3>Categories</h3>
+        <div id="categories-list"></div>
+        <hr>
+        <h3>Products</h3>
+        <div id="products-list"></div>
+    </div>
+
+    <!-- CART TAB -->
+    <div id="cart-tab" class="hidden">
+        <h3>Your Cart</h3>
+        <div id="cart-items"></div>
+        <p>Total: $<span id="cart-total">0.00</span></p>
+        <p>Payment: Cash on Delivery / Physical Store</p>
+        <button class="checkout-btn" onclick="sendOrder()">Validate Order</button>
+    </div>
+
+    <!-- ADMIN TAB -->
+    <div id="admin-tab" class="hidden">
+        <h3>Add Product</h3>
+        <input type="text" id="new-name" placeholder="Product Name">
+        <input type="number" id="new-price" placeholder="Price">
+        <select id="new-category">
+            <option value="Food">Food</option>
+            <option value="Drinks">Drinks</option>
+        </select>
+        <button class="tab-btn" onclick="addProduct()">Add Product</button>
+        <hr>
+        <h3>Current Products</h3>
+        <div id="admin-products-list"></div>
+    </div>
+
+    <script>
+        // Initialize WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // State
+        let products = [];
+        let cart = {};
+        let isAdmin = false;
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            // Receive data from bot (products list and admin status)
+            const initData = tg.initDataUnsafe;
+            // Simulating data passed via start parameter or a specific command for this demo
+            // In a real scenario, you might fetch this from an API endpoint provided by the bot
+            // Here we assume the bot sends the JSON in the start_param or we fetch it.
+            // For this standalone example, we will use the data passed by the bot in the 'start' command logic
+            // But since we can't easily pass complex JSON in start_param without encoding, 
+            // we will use a placeholder fetch or rely on the bot sending a message with the data.
+            
+            // NOTE: For this script to work seamlessly, the bot sends the data in a specific way.
+            // We will use `tg.sendData` to send data back to bot.
+            
+            // Let's assume we fetch initial data from a hypothetical endpoint
+            // fetch('/api/products').then(res => res.json()).then(data => products = data);
+            
+            // For this demo, we will ask the bot for data via a button or assume it's loaded.
+            // To keep it simple, let's assume the bot sends the data as a JSON string in the start param
+            // or we just hardcode the fetch for the example.
+            
+            // Let's implement a simple fetcher that expects the bot to have served the data
+            // Since this is a standalone HTML example, I will mock the fetch or assume it's passed.
+            
+            // REAL IMPLEMENTATION: The bot should serve this HTML and inject the data into it.
+            // Or the JS makes a fetch request to the bot's server.
+            
+            // For this specific script structure, we will assume the data is passed via 
+            // `tg.initDataUnsafe.start_param` which contains a JSON string of products.
+            
+            try {
+                if (initData.start_param) {
+                    const data = JSON.parse(initData.start_param);
+                    products = data.products;
+                    isAdmin = data.isAdmin;
+                    if(isAdmin) document.getElementById('admin-tab-btn').style.display = 'inline-block';
+                    renderCategories();
+                    renderProducts();
+                } else {
+                    // Fallback for testing if opened directly without start_param
+                    products = [
+                        {id: 1, name: "Pizza", price: 10, category: "Food"},
+                        {id: 2, name: "Coke", price: 2, category: "Drinks"}
+                    ];
+                    renderCategories();
+                    renderProducts();
+                }
+            } catch (e) {
+                console.error("Error parsing start param", e);
+            }
+        };
+
+        // --- NAVIGATION ---
+        function showTab(tabName) {
+            document.getElementById('menu-tab').classList.add('hidden');
+            document.getElementById('cart-tab').classList.add('hidden');
+            document.getElementById('admin-tab').classList.add('hidden');
+            document.getElementById(tabName + '-tab').classList.remove('hidden');
+        }
+
+        // --- MENU LOGIC ---
+        function renderCategories() {
+            const categories = [...new Set(products.map(p => p.category))];
+            const container = document.getElementById('categories-list');
+            container.innerHTML = '';
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'category-btn';
+                btn.innerText = cat;
+                btn.onclick = () => filterProducts(cat);
+                container.appendChild(btn);
+            });
+        }
+
+        function renderProducts(filterCategory = null) {
+            const container = document.getElementById('products-list');
+            container.innerHTML = '';
+            const filtered = filterCategory ? products.filter(p => p.category === filterCategory) : products;
+            
+            filtered.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'product-card';
+                div.innerHTML = `
+                    <div>
+                        <strong>${p.name}</strong><br>
+                        $${p.price.toFixed(2)}
+                    </div>
+                    <button class="tab-btn" onclick="addToCart(${p.id})">Add +</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function filterProducts(category) {
+            renderProducts(category);
+        }
+
+        function addToCart(productId) {
+            if (!cart[productId]) cart[productId] = 0;
+            cart[productId]++;
+            updateCartUI();
+            tg.showPopup({message: "Added to cart!"});
+        }
+
+        // --- CART LOGIC ---
+        function updateCartUI() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            let total = 0;
+            
+            for (const [id, qty] of Object.entries(cart)) {
+                if (qty > 0) {
+                    const product = products.find(p => p.id == id);
+                    if (product) {
+                        total += product.price * qty;
+                        const div = document.createElement('div');
+                        div.className = 'cart-item';
+                        div.innerHTML = `
+                            <span>${product.name} (x${qty})</span>
+                            <div>
+                                <button class="btn-small" onclick="changeQty(${id}, -1)">-</button>
+                                <button class="btn-small" onclick="changeQty(${id}, 1)">+</button>
+                            </div>
+                        `;
+                        container.appendChild(div);
+                    }
+                }
+            }
+            document.getElementById('cart-total').innerText = total.toFixed(2);
+        }
+
+        function changeQty(id, delta) {
+            cart[id] += delta;
+            if (cart[id] <= 0) delete cart[id];
+            updateCartUI();
+        }
+
+        function sendOrder() {
+            if (Object.keys(cart).length === 0) {
+                tg.showAlert("Your cart is empty!");
+                return;
+            }
+            
+            let orderDetails = "New Order:\\n";
+            let total = 0;
+            for (const [id, qty] of Object.entries(cart)) {
+                const product = products.find(p => p.id == id);
+                if (product) {
+                    const subtotal = product.price * qty;
+                    total += subtotal;
+                    orderDetails += `- ${product.name} x${qty}: $${subtotal.toFixed(2)}\\n`;
+                }
+            }
+            orderDetails += `\\nTotal: $${total.toFixed(2)} (Physical Payment)`;
+
+            // Send data back to bot
+            const data = JSON.stringify({ type: 'new_order', content: orderDetails });
+            tg.sendData(data);
+            
+            // Close webapp
+            tg.close();
+        }
+
+        // --- ADMIN LOGIC ---
+        function addProduct() {
+            const name = document.getElementById('new-name').value;
+            const price = parseFloat(document.getElementById('new-price').value);
+            const category = document.getElementById('new-category').value;
+            
+            if (name && price) {
+                const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+                const newProduct = { id: newId, name, price, category };
+                products.push(newProduct);
+                
+                // Send update to bot
+                const data = JSON.stringify({ type: 'add_product', product: newProduct });
+                tg.sendData(data);
+                
+                renderCategories();
+                renderProducts();
+                renderAdminList();
+                
+                // Clear inputs
+                document.getElementById('new-name').value = '';
+                document.getElementById('new-price').value = '';
+                tg.showPopup({message: "Product added!"});
+            }
+        }
+        
+        function renderAdminList() {
+            const container = document.getElementById('admin-products-list');
+            container.innerHTML = '';
+            products.forEach(p => {
+                const div = document.createElement('div');
+                div.innerText = `${p.name} - $${p.price} [${p.category}]`;
+                container.appendChild(div);
+            });
+        }
+        
+        // Initial Admin render if tab is opened
+        const adminBtn = document.getElementById('admin-tab-btn');
+        if(adminBtn) {
+            adminBtn.onclick = function() {
+                showTab('admin');
+                renderAdminList();
+            }
+        }
+
+    </script>
+</body>
+</html>
+"""
