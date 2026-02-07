@@ -95,10 +95,10 @@
         .product-card {
             background: var(--tg-theme-secondary-bg-color);
             border-radius: var(--border-radius);
-            padding: 0; /* Padding géré à l'intérieur pour l'image */
+            padding: 0;
             margin-bottom: 15px;
             display: flex;
-            flex-direction: column; /* Empiler image et contenu */
+            flex-direction: column;
             box-shadow: var(--shadow);
             overflow: hidden;
         }
@@ -113,7 +113,7 @@
         .product-image {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* L'image remplit le cadre sans être déformée */
+            object-fit: cover;
         }
 
         .product-details {
@@ -265,7 +265,7 @@
         }
 
         .nav-item {
-            position: relative; /* Pour positionner le badge */
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -294,7 +294,7 @@
         .badge {
             position: absolute;
             top: 5px;
-            right: 25%; /* Centré sur l'icône */
+            right: 25%;
             background-color: #ff3b30;
             color: white;
             border-radius: 50%;
@@ -303,8 +303,8 @@
             font-weight: bold;
             min-width: 18px;
             text-align: center;
-            display: none; /* Caché par défaut */
-            border: 2px solid var(--tg-theme-secondary-bg-color); /* Bordure pour séparer de l'icône */
+            display: none;
+            border: 2px solid var(--tg-theme-secondary-bg-color);
             z-index: 101;
         }
     </style>
@@ -412,16 +412,16 @@
         document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#007aff');
         document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
         document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#ffffff');
-        document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#86868b');
+        document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint-color || '#86868b');
 
         let products = [];
         let cart = {};
         let isAdmin = false;
-        let currentImageBase64 = null; // Stockage temporaire de l'image uploadée
+        let currentImageBase64 = null;
 
         window.onload = async function() {
             try {
-                // Données simulées avec images par défaut
+                // Données simulées
                 products = [
                     {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food", image: "https://picsum.photos/seed/pizza/400/300"},
                     {id: 2, name: "Burger Deluxe", price: 12.50, category: "Food", image: "https://picsum.photos/seed/burger/400/300"},
@@ -430,9 +430,13 @@
                     {id: 5, name: "Tiramisu", price: 5.00, category: "Dessert", image: "https://picsum.photos/seed/tira/400/300"}
                 ];
                 
+                // Vérification Admin via URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const adminIdFromUrl = urlParams.get('admin');
                 const userId = tg.initDataUnsafe.user?.id;
-                // Remplacez par votre ID
-                if (userId === 123456789) { 
+
+                // Si l'ID admin est dans l'URL et correspond à l'utilisateur Telegram
+                if (adminIdFromUrl && userId && adminIdFromUrl == userId) {
                     isAdmin = true;
                     document.getElementById('nav-admin').style.display = 'flex';
                 }
@@ -493,7 +497,6 @@
             filtered.forEach(p => {
                 const div = document.createElement('div');
                 div.className = 'product-card';
-                // Utilisation de l'image du produit ou une image par défaut si null
                 const imgUrl = p.image || "https://picsum.photos/seed/default/400/300";
                 
                 div.innerHTML = `
@@ -601,19 +604,14 @@
         }
 
         // --- LOGIQUE ADMIN & IMAGE ---
-        
-        // Fonction pour prévisualiser l'image et la convertir en Base64
         function previewImage(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    // Afficher l'aperçu
                     const preview = document.getElementById('image-preview');
                     preview.src = e.target.result;
                     preview.style.display = 'block';
-                    
-                    // Stocker en base64 pour l'envoi
                     currentImageBase64 = e.target.result;
                 };
                 reader.readAsDataURL(file);
@@ -627,8 +625,6 @@
             
             if (name && price) {
                 const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-                
-                // Utiliser l'image uploadée ou une image par défaut
                 const finalImage = currentImageBase64 || `https://picsum.photos/seed/${newId}/400/300`;
 
                 const newProduct = { id: newId, name, price, category, image: finalImage };
