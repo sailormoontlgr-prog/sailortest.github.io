@@ -102,6 +102,7 @@
             flex-direction: column;
             box-shadow: var(--shadow);
             overflow: hidden;
+            cursor: pointer;
         }
         
         .product-image-container {
@@ -221,7 +222,6 @@
             font-size: 16px;
         }
         
-        /* Upload Image Style */
         .file-upload {
             position: relative;
             display: inline-block;
@@ -249,7 +249,6 @@
             display: none;
         }
 
-        /* Bouton Supprimer */
         .btn-delete {
             background-color: #ff3b30;
             color: white;
@@ -259,6 +258,71 @@
             cursor: pointer;
             font-size: 12px;
             white-space: nowrap;
+        }
+        
+        .btn-edit {
+            background-color: var(--tg-theme-button-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+            margin-right: 5px;
+        }
+
+        /* --- MODALE (POPUP) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end; /* Mobile sheet style */
+        }
+        
+        .modal-content {
+            background: var(--tg-theme-secondary-bg-color);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .option-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .admin-option-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 5px;
         }
 
         /* --- BARRE DE NAVIGATION --- */
@@ -303,7 +367,6 @@
             color: var(--tg-theme-button-color);
         }
 
-        /* --- BADGE (PASTILLE) --- */
         .badge {
             position: absolute;
             top: 5px;
@@ -379,7 +442,7 @@
                 <input type="text" id="new-name" class="form-input" placeholder="Nom du produit">
             </div>
             <div class="form-group">
-                <input type="number" id="new-price" class="form-input" placeholder="Prix (€)">
+                <input type="number" id="new-price" class="form-input" placeholder="Prix de base (€)">
             </div>
             <div class="form-group">
                 <select id="new-category" class="form-input">
@@ -388,12 +451,74 @@
                     <option value="Dessert">Dessert</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="new-has-options" onchange="toggleOptionsInput('new')">
+                    <span>Ce produit a des options (tailles, suppléments...)</span>
+                </label>
+            </div>
+            
+            <!-- Zone dynamique pour ajouter des options -->
+            <div id="new-options-container" class="hidden" style="margin-bottom:15px; padding:10px; background:#f9f9f9; border-radius:8px;">
+                <div id="new-options-list"></div>
+                <button class="btn-edit" style="width:100%; margin-top:5px;" onclick="addOptionInput('new')">+ Ajouter une option</button>
+            </div>
+
             <button class="btn-checkout" onclick="addProduct()">Ajouter le produit</button>
             
             <h3 style="margin-top:30px">Liste actuelle</h3>
             <div id="admin-products-list"></div>
         </div>
 
+    </div>
+
+    <!-- MODALE PRODUIT (Client) -->
+    <div id="product-modal" class="modal-overlay hidden" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="modal-title" style="margin:0">Nom Produit</h2>
+                <span style="font-size:24px; cursor:pointer;" onclick="closeModalForce()">&times;</span>
+            </div>
+            <img id="modal-image" src="" style="width:100%; height:200px; object-fit:cover; border-radius:12px; margin-bottom:15px;">
+            
+            <div id="modal-options-list"></div>
+            
+            <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
+                <span id="modal-price" style="font-size:20px; font-weight:bold;">0.00 €</span>
+                <button id="modal-add-btn" class="btn-add" style="width:auto; height:auto; padding:10px 20px; border-radius:12px;">Ajouter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE EDITION (Admin) -->
+    <div id="edit-modal" class="modal-overlay hidden" onclick="closeEditModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 style="margin:0">Modifier le produit</h2>
+                <span style="font-size:24px; cursor:pointer;" onclick="closeEditModalForce()">&times;</span>
+            </div>
+            
+            <div class="form-group">
+                <input type="text" id="edit-name" class="form-input" placeholder="Nom du produit">
+            </div>
+            <div class="form-group">
+                <input type="number" id="edit-price" class="form-input" placeholder="Prix de base">
+            </div>
+            
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="edit-has-options" onchange="toggleOptionsInput('edit')">
+                    <span>Activer les options</span>
+                </label>
+            </div>
+
+            <div id="edit-options-container" class="hidden" style="margin-bottom:15px; padding:10px; background:#f9f9f9; border-radius:8px;">
+                <div id="edit-options-list"></div>
+                <button class="btn-edit" style="width:100%; margin-top:5px;" onclick="addOptionInput('edit')">+ Ajouter une option</button>
+            </div>
+
+            <button class="btn-checkout" onclick="saveProductEdit()">Sauvegarder les modifications</button>
+        </div>
     </div>
 
     <!-- BARRE DE NAVIGATION -->
@@ -414,23 +539,18 @@
     </nav>
 
     <script>
-        // --- INITIALISATION ROBUSTE ---
+        // --- INITIALISATION ---
         let tg = null;
         let isTelegramReady = false;
 
-        // 1. On essaie de charger Telegram, mais on ne bloque pas si ça échoue
         try {
             if (window.Telegram && window.Telegram.WebApp) {
                 tg = window.Telegram.WebApp;
                 tg.expand();
-                
-                // Configuration du bouton retour
-                if (tg.BackButton) {
+                if(tg.BackButton) {
                     tg.BackButton.show();
                     tg.BackButton.onClick(() => tg.close());
                 }
-                
-                // Application du thème
                 if (tg.themeParams) {
                     document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#f5f5f7');
                     document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#1d1d1f');
@@ -439,26 +559,17 @@
                     document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#ffffff');
                     document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#86868b');
                 }
-                
                 isTelegramReady = true;
-            } else {
-                console.warn("Script Telegram non détecté.");
             }
         } catch (e) {
-            console.error("Erreur initialisation Telegram:", e);
+            console.warn("Script Telegram non détecté.");
         }
 
-        // 2. Sécurité : Force l'affichage après 1 seconde si Telegram n'a pas répondu
         setTimeout(() => {
-            if (!isTelegramReady) {
-                console.log("Timeout: Affichage forcé sans Telegram.");
-                initApp();
-            }
+            if (!isTelegramReady) initApp();
         }, 1000);
 
-        // 3. Si Telegram est prêt, on lance tout de suite
         if (isTelegramReady) {
-            // On attend un petit peu que le DOM soit stable (optionnel mais recommandé)
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', initApp);
             } else {
@@ -468,31 +579,30 @@
 
         // --- VARIABLES GLOBALES ---
         let products = [];
-        let cart = {};
+        let cart = {}; // { "prodId-optionName": qty } ex: { "1-M": 2 }
         let isAdmin = false;
         let currentImageBase64 = null;
+        let currentEditingProductId = null;
+        let selectedOption = null; // Pour la modale client
 
-        // --- FONCTION D'INITIALISATION PRINCIPALE ---
         function initApp() {
-            // Données par défaut (seront écrasées si on arrive à les charger depuis une source externe plus tard)
+            // NOTE: Dans une vraie app, on fetcherait ici les produits depuis le Python
+            // Pour l'instant on garde les données par défaut car on ne peut pas facilement fetch depuis GitHub Pages sans API
             products = [
-                {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food", image: "https://picsum.photos/seed/pizza/400/300"},
-                {id: 2, name: "Burger Deluxe", price: 12.50, category: "Food", image: "https://picsum.photos/seed/burger/400/300"},
-                {id: 3, name: "Coca Cola", price: 2.50, category: "Drinks", image: "https://picsum.photos/seed/coke/400/300"},
-                {id: 4, name: "Orange Juice", price: 3.00, category: "Drinks", image: "https://picsum.photos/seed/juice/400/300"},
-                {id: 5, name: "Tiramisu", price: 5.00, category: "Dessert", image: "https://picsum.photos/seed/tira/400/300"}
+                {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food", image: "https://picsum.photos/seed/pizza/400/300", hasOptions: true, options: [{name: "Taille S", price: 0}, {name: "Taille M", price: 2}, {name: "Taille L", price: 4}]},
+                {id: 2, name: "Burger Deluxe", price: 12.50, category: "Food", image: "https://picsum.photos/seed/burger/400/300", hasOptions: false, options: []},
+                {id: 3, name: "Coca Cola", price: 2.50, category: "Drinks", image: "https://picsum.photos/seed/coke/400/300", hasOptions: false, options: []},
+                {id: 4, name: "Orange Juice", price: 3.00, category: "Drinks", image: "https://picsum.photos/seed/juice/400/300", hasOptions: false, options: []},
+                {id: 5, name: "Tiramisu", price: 5.00, category: "Dessert", image: "https://picsum.photos/seed/tira/400/300", hasOptions: false, options: []}
             ];
             
-            // Vérification Admin
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const adminIdFromUrl = urlParams.get('admin');
-                
                 let userId = null;
                 if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
                     userId = tg.initDataUnsafe.user.id;
                 }
-
                 if (adminIdFromUrl && userId && adminIdFromUrl == userId) {
                     isAdmin = true;
                     document.getElementById('nav-admin').style.display = 'flex';
@@ -501,7 +611,6 @@
                 console.error("Erreur vérification admin:", e);
             }
 
-            // Affichage du contenu
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
             
@@ -555,6 +664,16 @@
                 div.className = 'product-card';
                 const imgUrl = p.image || "https://picsum.photos/seed/default/400/300";
                 
+                // Au clic sur la carte, on ouvre la modale
+                div.onclick = (e) => {
+                    // Si on clique sur le bouton +, on n'ouvre pas la modale (sauf si options)
+                    if(e.target.classList.contains('btn-add') && !p.hasOptions) {
+                        addToCart(p.id, null);
+                    } else {
+                        openProductModal(p);
+                    }
+                };
+                
                 div.innerHTML = `
                     <div class="product-image-container">
                         <img src="${imgUrl}" class="product-image" alt="${p.name}">
@@ -562,22 +681,92 @@
                     <div class="product-details">
                         <div class="product-info">
                             <h3>${p.name}</h3>
-                            <div class="product-price">${p.price.toFixed(2)} €</div>
+                            <div class="product-price">à partir de ${p.price.toFixed(2)} €</div>
                         </div>
-                        <button class="btn-add" onclick="addToCart(${p.id})">+</button>
+                        <button class="btn-add">${p.hasOptions ? '...' : '+'}</button>
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
+        // --- MODALE PRODUIT (CLIENT) ---
+        function openProductModal(product) {
+            const modal = document.getElementById('product-modal');
+            const title = document.getElementById('modal-title');
+            const img = document.getElementById('modal-image');
+            const optionsList = document.getElementById('modal-options-list');
+            const priceDisplay = document.getElementById('modal-price');
+            const addBtn = document.getElementById('modal-add-btn');
+
+            title.innerText = product.name;
+            img.src = product.image;
+            selectedOption = null; // Reset option
+            priceDisplay.innerText = product.price.toFixed(2) + ' €';
+
+            optionsList.innerHTML = '';
+            
+            if (product.hasOptions && product.options && product.options.length > 0) {
+                product.options.forEach((opt, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'option-item';
+                    div.onclick = () => selectOption(product, opt, div);
+                    div.innerHTML = `
+                        <span>${opt.name}</span>
+                        <span>${opt.price > 0 ? '+' + opt.price.toFixed(2) + ' €' : 'Standard'}</span>
+                    `;
+                    optionsList.appendChild(div);
+                });
+                addBtn.onclick = () => {
+                    if(!selectedOption) {
+                        if(tg) tg.showAlert("Veuillez choisir une option.");
+                        else alert("Veuillez choisir une option.");
+                    } else {
+                        addToCart(product.id, selectedOption);
+                        closeModalForce();
+                    }
+                };
+            } else {
+                // Pas d'options, affichage simple
+                optionsList.innerHTML = '<p style="color:#888; text-align:center;">Aucune option disponible pour ce produit.</p>';
+                addBtn.onclick = () => {
+                    addToCart(product.id, null);
+                    closeModalForce();
+                };
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function selectOption(product, option, element) {
+            // Visuel
+            document.querySelectorAll('.option-item').forEach(el => el.style.borderColor = '#eee');
+            element.style.borderColor = 'var(--tg-theme-button-color)';
+            
+            selectedOption = option;
+            const newPrice = product.price + option.price;
+            document.getElementById('modal-price').innerText = newPrice.toFixed(2) + ' €';
+        }
+
+        function closeModal(e) {
+            if (e.target.id === 'product-modal') closeModalForce();
+        }
+        function closeModalForce() {
+            document.getElementById('product-modal').classList.add('hidden');
+        }
+
         // --- LOGIQUE PANIER ---
-        function addToCart(productId) {
-            if (!cart[productId]) cart[productId] = 0;
-            cart[productId]++;
+        // Clé du panier: "ID-OptionName" (ex: "1-Taille M")
+        function addToCart(productId, option) {
+            const key = option ? `${productId}-${option.name}` : `${productId}-null`;
+            
+            if (!cart[key]) cart[key] = 0;
+            cart[key]++;
+            
             updateCartBadge();
-            if(tg) tg.showPopup({message: "Ajouté au panier !"});
-            else alert("Ajouté au panier !");
+            const msg = option ? `Ajouté: ${option.name}` : "Ajouté au panier !";
+            if(tg) tg.showPopup({message: msg});
+            else alert(msg);
         }
 
         function updateCartBadge() {
@@ -598,12 +787,27 @@
             let total = 0;
             let hasItems = false;
 
-            for (const [id, qty] of Object.entries(cart)) {
+            for (const [key, qty] of Object.entries(cart)) {
                 if (qty > 0) {
-                    hasItems = true;
-                    const product = products.find(p => p.id == id);
+                    const [idStr, optName] = key.split('-');
+                    const productId = parseInt(idStr);
+                    const product = products.find(p => p.id === productId);
+                    
                     if (product) {
-                        total += product.price * qty;
+                        hasItems = true;
+                        // Trouver le prix de l'option
+                        let optionPrice = 0;
+                        let displayOption = "";
+                        if(optName !== 'null') {
+                            const optObj = product.options.find(o => o.name === optName);
+                            if(optObj) {
+                                optionPrice = optObj.price;
+                                displayOption = ` (${optName})`;
+                            }
+                        }
+                        
+                        const finalPrice = product.price + optionPrice;
+                        total += finalPrice * qty;
                         const imgUrl = product.image || "https://picsum.photos/seed/default/100/100";
                         
                         const div = document.createElement('div');
@@ -611,13 +815,13 @@
                         div.innerHTML = `
                             <img src="${imgUrl}" class="cart-img" alt="${product.name}">
                             <div class="cart-info">
-                                <h4>${product.name}</h4>
-                                <span>${product.price.toFixed(2)} €</span>
+                                <h4>${product.name}${displayOption}</h4>
+                                <span>${finalPrice.toFixed(2)} €</span>
                             </div>
                             <div class="qty-controls">
-                                <button class="qty-btn" onclick="changeQty(${id}, -1)">-</button>
+                                <button class="qty-btn" onclick="changeQty('${key}', -1)">-</button>
                                 <span>${qty}</span>
-                                <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
+                                <button class="qty-btn" onclick="changeQty('${key}', 1)">+</button>
                             </div>
                         `;
                         container.appendChild(div);
@@ -634,9 +838,9 @@
             }
         }
 
-        function changeQty(id, delta) {
-            cart[id] += delta;
-            if (cart[id] <= 0) delete cart[id];
+        function changeQty(key, delta) {
+            cart[key] += delta;
+            if (cart[key] <= 0) delete cart[key];
             updateCartBadge();
             renderCart();
         }
@@ -646,12 +850,24 @@
 
             let orderDetails = "Nouvelle commande:\n";
             let total = 0;
-            for (const [id, qty] of Object.entries(cart)) {
-                const product = products.find(p => p.id == id);
+            for (const [key, qty] of Object.entries(cart)) {
+                const [idStr, optName] = key.split('-');
+                const productId = parseInt(idStr);
+                const product = products.find(p => p.id === productId);
+                
                 if (product) {
-                    const subtotal = product.price * qty;
-                    total += subtotal;
-                    orderDetails += `- ${product.name} x${qty}: ${subtotal.toFixed(2)}€\n`;
+                    let optionPrice = 0;
+                    let displayOption = "";
+                    if(optName !== 'null') {
+                        const optObj = product.options.find(o => o.name === optName);
+                        if(optObj) {
+                            optionPrice = optObj.price;
+                            displayOption = ` (${optName})`;
+                        }
+                    }
+                    const finalPrice = product.price + optionPrice;
+                    total += finalPrice * qty;
+                    orderDetails += `- ${product.name}${displayOption} x${qty}: ${(finalPrice * qty).toFixed(2)}€\n`;
                 }
             }
             orderDetails += `\nTotal: ${total.toFixed(2)}€ (Paiement physique)`;
@@ -661,11 +877,11 @@
                 tg.close();
             } else {
                 console.log(orderDetails);
-                alert("Commande simulée (console log) car hors de Telegram");
+                alert("Commande simulée");
             }
         }
 
-        // --- LOGIQUE ADMIN & IMAGE ---
+        // --- LOGIQUE ADMIN ---
         function previewImage(event) {
             const file = event.target.files[0];
             if (file) {
@@ -680,16 +896,52 @@
             }
         }
 
+        function toggleOptionsInput(prefix) {
+            const checkbox = document.getElementById(`${prefix}-has-options`);
+            const container = document.getElementById(`${prefix}-options-container`);
+            if (checkbox.checked) {
+                container.classList.remove('hidden');
+                // Si vide, ajouter une option par défaut
+                const list = document.getElementById(`${prefix}-options-list`);
+                if(list.children.length === 0) addOptionInput(prefix);
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function addOptionInput(prefix) {
+            const container = document.getElementById(`${prefix}-options-list`);
+            const div = document.createElement('div');
+            div.className = 'admin-option-row';
+            div.innerHTML = `
+                <input type="text" class="form-input opt-name" placeholder="Nom (ex: Taille M)" style="margin-bottom:5px;">
+                <input type="number" class="form-input opt-price" placeholder="Supplément (€)" style="margin-bottom:5px;">
+                <button class="btn-delete" onclick="this.parentElement.remove()" style="width:100%">Supprimer cette ligne</button>
+            `;
+            container.appendChild(div);
+        }
+
         function addProduct() {
             const name = document.getElementById('new-name').value;
             const price = parseFloat(document.getElementById('new-price').value);
             const category = document.getElementById('new-category').value;
+            const hasOptions = document.getElementById('new-has-options').checked;
             
+            let options = [];
+            if (hasOptions) {
+                const rows = document.querySelectorAll('#new-options-list .admin-option-row');
+                rows.forEach(row => {
+                    const optName = row.querySelector('.opt-name').value;
+                    const optPrice = parseFloat(row.querySelector('.opt-price').value) || 0;
+                    if(optName) options.push({name: optName, price: optPrice});
+                });
+            }
+
             if (name && price) {
                 const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
                 const finalImage = currentImageBase64 || `https://picsum.photos/seed/${newId}/400/300`;
 
-                const newProduct = { id: newId, name, price, category, image: finalImage };
+                const newProduct = { id: newId, name, price, category, image: finalImage, hasOptions, options };
                 products.push(newProduct);
                 
                 if (tg) {
@@ -705,6 +957,9 @@
                 document.getElementById('new-price').value = '';
                 document.getElementById('product-image').value = '';
                 document.getElementById('image-preview').style.display = 'none';
+                document.getElementById('new-has-options').checked = false;
+                document.getElementById('new-options-container').classList.add('hidden');
+                document.getElementById('new-options-list').innerHTML = '';
                 currentImageBase64 = null;
                 
                 renderCategories();
@@ -731,10 +986,13 @@
                         <img src="${imgUrl}" style="width:40px; height:40px; border-radius:4px; object-fit:cover; flex-shrink:0;">
                         <div style="min-width:0;">
                             <strong style="display:block;">${p.name}</strong>
-                            <span style="font-size:12px; color:#888">${p.category} - ${p.price}€</span>
+                            <span style="font-size:12px; color:#888">${p.category} - ${p.price}€ ${p.hasOptions ? '(Options)' : ''}</span>
                         </div>
                     </div>
-                    <button class="btn-delete" onclick="deleteProduct(${p.id})">Supprimer</button>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-edit" onclick="openEditModal(${p.id})">Modifier</button>
+                        <button class="btn-delete" onclick="deleteProduct(${p.id})">Supprimer</button>
+                    </div>
                 `;
                 container.appendChild(div);
             });
@@ -742,18 +1000,102 @@
 
         function deleteProduct(id) {
             if(confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) {
-                // 1. Envoyer la demande au bot Python
-                if (tg) {
-                    tg.sendData(JSON.stringify({ type: 'delete_product', id: id }));
-                }
-                
-                // 2. Mettre à jour l'affichage local immédiatement
+                if (tg) tg.sendData(JSON.stringify({ type: 'delete_product', id: id }));
                 products = products.filter(p => p.id !== id);
                 renderAdminList();
                 renderCategories();
                 renderProducts();
-                
                 if(tg) tg.showPopup({message: "Produit supprimé !"});
+            }
+        }
+
+        // --- LOGIQUE EDITION PRODUIT ---
+        function openEditModal(id) {
+            const product = products.find(p => p.id === id);
+            if(!product) return;
+
+            currentEditingProductId = id;
+            
+            document.getElementById('edit-name').value = product.name;
+            document.getElementById('edit-price').value = product.price;
+            document.getElementById('edit-has-options').checked = product.hasOptions;
+            
+            const optionsList = document.getElementById('edit-options-list');
+            optionsList.innerHTML = '';
+            
+            if(product.hasOptions && product.options) {
+                toggleOptionsInput('edit'); // Ouvre le container
+                product.options.forEach(opt => {
+                    const div = document.createElement('div');
+                    div.className = 'admin-option-row';
+                    div.innerHTML = `
+                        <input type="text" class="form-input opt-name" placeholder="Nom" value="${opt.name}" style="margin-bottom:5px;">
+                        <input type="number" class="form-input opt-price" placeholder="Supplément" value="${opt.price}" style="margin-bottom:5px;">
+                        <button class="btn-delete" onclick="this.parentElement.remove()" style="width:100%">Supprimer cette ligne</button>
+                    `;
+                    optionsList.appendChild(div);
+                });
+            } else {
+                document.getElementById('edit-options-container').classList.add('hidden');
+            }
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeEditModal(e) {
+            if (e.target.id === 'edit-modal') closeEditModalForce();
+        }
+        function closeEditModalForce() {
+            document.getElementById('edit-modal').classList.add('hidden');
+            currentEditingProductId = null;
+        }
+
+        function saveProductEdit() {
+            if(!currentEditingProductId) return;
+
+            const productIndex = products.findIndex(p => p.id === currentEditingProductId);
+            if(productIndex === -1) return;
+
+            const name = document.getElementById('edit-name').value;
+            const price = parseFloat(document.getElementById('edit-price').value);
+            const hasOptions = document.getElementById('edit-has-options').checked;
+            
+            let options = [];
+            if (hasOptions) {
+                const rows = document.querySelectorAll('#edit-options-list .admin-option-row');
+                rows.forEach(row => {
+                    const optName = row.querySelector('.opt-name').value;
+                    const optPrice = parseFloat(row.querySelector('.opt-price').value) || 0;
+                    if(optName) options.push({name: optName, price: optPrice});
+                });
+            }
+
+            if (name && price) {
+                // On garde l'image existante
+                const existingProduct = products[productIndex];
+                
+                const updatedProduct = { 
+                    ...existingProduct, 
+                    name, 
+                    price, 
+                    hasOptions, 
+                    options 
+                };
+                
+                products[productIndex] = updatedProduct;
+                
+                if (tg) {
+                    tg.sendData(JSON.stringify({ type: 'update_product', product: updatedProduct }));
+                    tg.showPopup({message: "Produit modifié !"});
+                } else {
+                    console.log("Produit modifié:", updatedProduct);
+                    alert("Produit modifié (Simulation)");
+                }
+                
+                closeEditModalForce();
+                renderAdminList();
+                renderCategories();
+                renderProducts();
             }
         }
     </script>
