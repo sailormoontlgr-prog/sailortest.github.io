@@ -1,168 +1,408 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Commande</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Utilisation d'une police Google Fonts pour un look moderne -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; padding: 10px; background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
-        .hidden { display: none; }
-        .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); margin-right: 5px; border-radius: 5px;}
-        .category-btn { display: block; width: 100%; margin: 5px 0; padding: 10px; background: var(--tg-theme-secondary-bg-color); border: none; color: var(--tg-theme-text-color); text-align: left; }
-        .product-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
-        .cart-item { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .btn-small { padding: 5px 10px; cursor: pointer; }
-        .checkout-btn { width: 100%; padding: 15px; background: var(--tg-theme-button-color); color: white; border: none; font-size: 16px; margin-top: 20px; }
-        input, select { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        #loading { text-align: center; margin-top: 20px; }
+        /* --- VARIABLES CSS --- */
+        :root {
+            --tg-theme-bg-color: #f5f5f7; /* Gris très clair par défaut si le thème Telegram ne charge pas */
+            --tg-theme-text-color: #1d1d1f;
+            --tg-theme-button-color: #007aff; /* Bleu style iOS */
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #ffffff;
+            --tg-theme-hint-color: #86868b;
+            --tg-theme-link-color: #007aff;
+            --border-radius: 16px;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --nav-height: 70px;
+        }
+
+        /* --- RESET & BASE --- */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            padding-bottom: calc(var(--nav-height) + 20px); /* Espace pour la nav barre */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- LOADING --- */
+        #loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: var(--tg-theme-hint-color);
+        }
+
+        /* --- HEADER --- */
+        header {
+            background-color: var(--tg-theme-secondary-bg-color);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 { margin: 0; font-size: 20px; font-weight: 600; }
+
+        /* --- CONTENU PRINCIPAL --- */
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .hidden { display: none !important; }
+
+        /* --- CATEGORIES --- */
+        .category-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            scrollbar-width: none; /* Firefox */
+        }
+        .category-scroll::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+        .category-chip {
+            background: var(--tg-theme-secondary-bg-color);
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: all 0.2s;
+            color: var(--tg-theme-text-color);
+        }
+        .category-chip.active {
+            background: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border-color: var(--tg-theme-button-color);
+        }
+
+        /* --- PRODUITS --- */
+        .product-card {
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.1s;
+        }
+        .product-info h3 { margin: 0 0 5px 0; font-size: 16px; }
+        .product-price { color: var(--tg-theme-hint-color); font-size: 14px; }
+        
+        .btn-add {
+            background: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* --- PANIER --- */
+        .cart-item {
+            background: var(--tg-theme-secondary-bg-color);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--tg-theme-bg-color);
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        .qty-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--tg-theme-button-color);
+            cursor: pointer;
+            padding: 0 5px;
+        }
+        
+        .checkout-section {
+            margin-top: 20px;
+            background: var(--tg-theme-secondary-bg-color);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        .btn-checkout {
+            width: 100%;
+            background: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* --- ADMIN --- */
+        .form-group { margin-bottom: 15px; }
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            background: var(--tg-theme-secondary-bg-color);
+            color: var(--tg-theme-text-color);
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        /* --- BARRE DE NAVIGATION (BOTTOM BAR) --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--nav-height);
+            background: var(--tg-theme-secondary-bg-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom); /* Pour iPhone X+ */
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--tg-theme-hint-color);
+            text-decoration: none;
+            font-size: 10px;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            transition: color 0.2s;
+        }
+
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+            fill: currentColor;
+        }
+
+        .nav-item.active {
+            color: var(--tg-theme-button-color);
+        }
     </style>
 </head>
 <body>
 
-    <!-- Loading Indicator -->
-    <div id="loading">Loading menu...</div>
+    <!-- HEADER -->
+    <header>
+        <h1 id="page-title">Menu</h1>
+        <div id="cart-badge" style="display:none; background:red; color:white; border-radius:50%; width:20px; height:20px; font-size:12px; display:flex; align-items:center; justify-content:center;">0</div>
+    </header>
 
-    <!-- Navigation Tabs -->
-    <div id="nav-tabs" class="hidden">
-        <button class="tab-btn" onclick="showTab('menu')">Menu</button>
-        <button class="tab-btn" onclick="showTab('cart')">Cart</button>
-        <button class="tab-btn" id="admin-tab-btn" onclick="showTab('admin')" style="display:none;">Admin</button>
+    <!-- LOADING -->
+    <div id="loading">
+        <svg width="40" height="40" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <style>.spinner_P7sC{transform-origin:center;animation:spinner_svv2 .75s infinite linear}@keyframes spinner_svv2{100%{transform:rotate(360deg)}}</style>
+            <path d="M10.14,1.16a11,11,0,0,0-9,8.92A1.59,1.59,0,0,0,2.46,12,1.52,1.52,0,0,0,4.11,10.7a8,8,0,0,1,6.66-6.61A1.42,1.42,0,0,0,12,2.69h0A1.57,1.57,0,0,0,10.14,1.16Z" class="spinner_P7sC" fill="var(--tg-theme-button-color)"/>
+        </svg>
+        <p style="margin-top:10px">Chargement...</p>
     </div>
 
-    <!-- MENU TAB -->
-    <div id="menu-tab" class="hidden">
-        <h3>Categories</h3>
-        <div id="categories-list"></div>
-        <hr>
-        <h3>Products</h3>
-        <div id="products-list"></div>
+    <!-- CONTENU -->
+    <div id="main-content" class="container hidden">
+        
+        <!-- ONGLET MENU -->
+        <div id="menu-tab">
+            <div class="category-scroll" id="categories-list">
+                <!-- Les catégories seront injectées ici -->
+            </div>
+            <div id="products-list">
+                <!-- Les produits seront injectés ici -->
+            </div>
+        </div>
+
+        <!-- ONGLET PANIER -->
+        <div id="cart-tab" class="hidden">
+            <div id="cart-items-container">
+                <p style="text-align:center; color:var(--tg-theme-hint-color); margin-top:50px;">Votre panier est vide</p>
+            </div>
+            
+            <div class="checkout-section hidden" id="checkout-area">
+                <div class="total-row">
+                    <span>Total</span>
+                    <span id="cart-total">0.00 €</span>
+                </div>
+                <p style="font-size:12px; color:var(--tg-theme-hint-color); margin-bottom:15px;">Paiement à la livraison / En magasin</p>
+                <button class="btn-checkout" onclick="sendOrder()">Valider la commande</button>
+            </div>
+        </div>
+
+        <!-- ONGLET ADMIN -->
+        <div id="admin-tab" class="hidden">
+            <h2 style="margin-top:0">Ajouter un produit</h2>
+            <div class="form-group">
+                <input type="text" id="new-name" class="form-input" placeholder="Nom du produit">
+            </div>
+            <div class="form-group">
+                <input type="number" id="new-price" class="form-input" placeholder="Prix (€)">
+            </div>
+            <div class="form-group">
+                <select id="new-category" class="form-input">
+                    <option value="Food">Nourriture</option>
+                    <option value="Drinks">Boissons</option>
+                    <option value="Dessert">Dessert</option>
+                </select>
+            </div>
+            <button class="btn-checkout" onclick="addProduct()">Ajouter</button>
+            
+            <h3 style="margin-top:30px">Liste actuelle</h3>
+            <div id="admin-products-list"></div>
+        </div>
+
     </div>
 
-    <!-- CART TAB -->
-    <div id="cart-tab" class="hidden">
-        <h3>Your Cart</h3>
-        <div id="cart-items"></div>
-        <p>Total: $<span id="cart-total">0.00</span></p>
-        <p>Payment: Cash on Delivery / Physical Store</p>
-        <button class="checkout-btn" onclick="sendOrder()">Validate Order</button>
-    </div>
-
-    <!-- ADMIN TAB -->
-    <div id="admin-tab" class="hidden">
-        <h3>Add Product</h3>
-        <input type="text" id="new-name" placeholder="Product Name">
-        <input type="number" id="new-price" placeholder="Price">
-        <select id="new-category">
-            <option value="Food">Food</option>
-            <option value="Drinks">Drinks</option>
-        </select>
-        <button class="tab-btn" onclick="addProduct()">Add Product</button>
-        <hr>
-        <h3>Current Products</h3>
-        <div id="admin-products-list"></div>
-    </div>
+    <!-- BARRE DE NAVIGATION EN BAS -->
+    <nav class="bottom-nav">
+        <a class="nav-item active" onclick="switchTab('menu')" id="nav-menu">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            <span>Menu</span>
+        </a>
+        <a class="nav-item" onclick="switchTab('cart')" id="nav-cart">
+            <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            <span>Panier</span>
+        </a>
+        <a class="nav-item" onclick="switchTab('admin')" id="nav-admin" style="display:none;">
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            <span>Admin</span>
+        </a>
+    </nav>
 
     <script>
-        // Initialize WebApp
+        // --- INITIALISATION ---
         const tg = window.Telegram.WebApp;
         tg.expand();
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => tg.close());
 
-        // State
+        // Appliquer le thème Telegram aux variables CSS
+        document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#f5f5f7');
+        document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#1d1d1f');
+        document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#007aff');
+        document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+        document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#ffffff');
+        document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#86868b');
+
         let products = [];
         let cart = {};
         let isAdmin = false;
 
-        // --- INITIALIZATION ---
+        // --- CHARGEMENT DES DONNÉES ---
         window.onload = async function() {
-            // We use Telegram's BackButton to close the webapp
-            tg.BackButton.show();
-            tg.BackButton.onClick(() => {
-                tg.close();
-            });
-
             try {
-                // Fetch data from the bot using the initData
-                // We use a public API or a simple fetch to a backend. 
-                // Since we don't have a backend server here, we will simulate the data fetch
-                // by asking the bot to send the data via a specific query or using a pre-filled response.
-                
-                // HOWEVER, for this to work without a backend server, we need a trick.
-                // We will use the initData to identify the user, but we can't easily query the bot 
-                // from a static HTML page without CORS issues or a backend.
-                
-                // SOLUTION FOR STATIC HOSTING:
-                // We will assume the bot sends the data in a clever way or we use a mock for now.
-                // But the correct way for a real app is: fetch('https://your-api.com/get_data?user_id=' + tg.initDataUnsafe.user.id)
-                
-                // Since you are hosting on GitHub Pages (static), we cannot easily connect to the bot directly
-                // without a middleware.
-                
-                // ALTERNATIVE: Use a free JSON bin service or similar, OR just hardcode the data here for the demo
-                // if you don't have a backend server.
-                
-                // For this fix, I will assume you might set up a simple endpoint later. 
-                // But to make it work NOW, let's just use the mock data inside the HTML if the fetch fails.
-                
-                // Let's try to fetch from a hypothetical endpoint (which you would need to create)
-                // For now, I will comment out the fetch and use the mock data to ensure it works immediately.
-                
-                /*
-                const response = await fetch('YOUR_API_ENDPOINT_HERE');
-                const data = await response.json();
-                products = data.products;
-                isAdmin = data.isAdmin;
-                */
-
-                // --- MOCK DATA FOR DEMO (Remove this block when you have a real API) ---
-                // In a real scenario, this data comes from your Python backend
+                // SIMULATION DES DONNÉES (Comme dans l'étape précédente)
                 products = [
                     {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food"},
                     {id: 2, name: "Burger Deluxe", price: 12.50, category: "Food"},
                     {id: 3, name: "Coca Cola", price: 2.50, category: "Drinks"},
                     {id: 4, name: "Orange Juice", price: 3.00, category: "Drinks"},
+                    {id: 5, name: "Tiramisu", price: 5.00, category: "Dessert"}
                 ];
-                // Check if user is admin (This is insecure for frontend only, but works for demo)
-                // In a real app, the backend determines this.
-                const userId = tg.initDataUnsafe.user?.id;
-                if (userId === 123456789) { // Replace with your ID
-                    isAdmin = true;
-                }
-                // ---------------------------------------------------------------------
-
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('nav-tabs').classList.remove('hidden');
-                document.getElementById('menu-tab').classList.remove('hidden');
                 
-                if(isAdmin) document.getElementById('admin-tab-btn').style.display = 'inline-block';
+                const userId = tg.initDataUnsafe.user?.id;
+                // Remplacez 123456789 par votre ID Admin
+                if (userId === 123456789) { 
+                    isAdmin = true;
+                    document.getElementById('nav-admin').style.display = 'flex';
+                }
+
+                // Masquer le loader et afficher le contenu
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
                 
                 renderCategories();
                 renderProducts();
+                updateCartBadge();
 
             } catch (e) {
-                console.error("Error initializing app", e);
-                document.getElementById('loading').innerText = "Error loading app.";
+                console.error(e);
+                document.getElementById('loading').innerHTML = "Erreur de chargement";
             }
         };
 
         // --- NAVIGATION ---
-        function showTab(tabName) {
+        function switchTab(tabName) {
+            // Gérer les classes actives des boutons
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`nav-${tabName}`).classList.add('active');
+
+            // Gérer l'affichage des sections
             document.getElementById('menu-tab').classList.add('hidden');
             document.getElementById('cart-tab').classList.add('hidden');
             document.getElementById('admin-tab').classList.add('hidden');
-            document.getElementById(tabName + '-tab').classList.remove('hidden');
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+
+            // Mettre à jour le titre
+            const titles = { 'menu': 'Menu', 'cart': 'Mon Panier', 'admin': 'Administration' };
+            document.getElementById('page-title').innerText = titles[tabName];
+
+            if(tabName === 'cart') renderCart();
+            if(tabName === 'admin') renderAdminList();
         }
 
-        // --- MENU LOGIC ---
+        // --- LOGIQUE MENU ---
         function renderCategories() {
-            const categories = [...new Set(products.map(p => p.category))];
+            const categories = ["Tout", ...new Set(products.map(p => p.category))];
             const container = document.getElementById('categories-list');
             container.innerHTML = '';
+            
             categories.forEach(cat => {
                 const btn = document.createElement('button');
-                btn.className = 'category-btn';
+                btn.className = 'category-chip' + (cat === "Tout" ? ' active' : '');
                 btn.innerText = cat;
-                btn.onclick = () => filterProducts(cat);
+                btn.onclick = () => {
+                    document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderProducts(cat === "Tout" ? null : cat);
+                };
                 container.appendChild(btn);
             });
         }
@@ -176,87 +416,102 @@
                 const div = document.createElement('div');
                 div.className = 'product-card';
                 div.innerHTML = `
-                    <div>
-                        <strong>${p.name}</strong><br>
-                        $${p.price.toFixed(2)}
+                    <div class="product-info">
+                        <h3>${p.name}</h3>
+                        <div class="product-price">${p.price.toFixed(2)} €</div>
                     </div>
-                    <button class="tab-btn" onclick="addToCart(${p.id})">Add +</button>
+                    <button class="btn-add" onclick="addToCart(${p.id})">+</button>
                 `;
                 container.appendChild(div);
             });
         }
-        
-        function filterProducts(category) {
-            renderProducts(category);
-        }
 
+        // --- LOGIQUE PANIER ---
         function addToCart(productId) {
             if (!cart[productId]) cart[productId] = 0;
             cart[productId]++;
-            updateCartUI();
-            tg.showPopup({message: "Added to cart!"});
+            updateCartBadge();
+            tg.showPopup({message: "Ajouté au panier !"});
         }
 
-        // --- CART LOGIC ---
-        function updateCartUI() {
-            const container = document.getElementById('cart-items');
+        function updateCartBadge() {
+            const count = Object.values(cart).reduce((a, b) => a + b, 0);
+            const badge = document.getElementById('cart-badge');
+            if (count > 0) {
+                badge.innerText = count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items-container');
+            const checkoutArea = document.getElementById('checkout-area');
             container.innerHTML = '';
             let total = 0;
-            
+            let hasItems = false;
+
             for (const [id, qty] of Object.entries(cart)) {
                 if (qty > 0) {
+                    hasItems = true;
                     const product = products.find(p => p.id == id);
                     if (product) {
                         total += product.price * qty;
                         const div = document.createElement('div');
                         div.className = 'cart-item';
                         div.innerHTML = `
-                            <span>${product.name} (x${qty})</span>
                             <div>
-                                <button class="btn-small" onclick="changeQty(${id}, -1)">-</button>
-                                <button class="btn-small" onclick="changeQty(${id}, 1)">+</button>
+                                <strong>${product.name}</strong>
+                                <div style="font-size:12px; color:var(--tg-theme-hint-color)">${product.price.toFixed(2)} €</div>
+                            </div>
+                            <div class="qty-controls">
+                                <button class="qty-btn" onclick="changeQty(${id}, -1)">-</button>
+                                <span>${qty}</span>
+                                <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
                             </div>
                         `;
                         container.appendChild(div);
                     }
                 }
             }
-            document.getElementById('cart-total').innerText = total.toFixed(2);
+
+            if (hasItems) {
+                checkoutArea.classList.remove('hidden');
+                document.getElementById('cart-total').innerText = total.toFixed(2) + ' €';
+            } else {
+                checkoutArea.classList.add('hidden');
+                container.innerHTML = '<p style="text-align:center; color:var(--tg-theme-hint-color); margin-top:50px;">Votre panier est vide</p>';
+            }
         }
 
         function changeQty(id, delta) {
             cart[id] += delta;
             if (cart[id] <= 0) delete cart[id];
-            updateCartUI();
+            updateCartBadge();
+            renderCart();
         }
 
         function sendOrder() {
-            if (Object.keys(cart).length === 0) {
-                tg.showAlert("Your cart is empty!");
-                return;
-            }
-            
-            let orderDetails = "New Order:\n";
+            if (Object.keys(cart).length === 0) return;
+
+            let orderDetails = "Nouvelle commande:\n";
             let total = 0;
             for (const [id, qty] of Object.entries(cart)) {
                 const product = products.find(p => p.id == id);
                 if (product) {
                     const subtotal = product.price * qty;
                     total += subtotal;
-                    orderDetails += `- ${product.name} x${qty}: $${subtotal.toFixed(2)}\n`;
+                    orderDetails += `- ${product.name} x${qty}: ${subtotal.toFixed(2)}€\n`;
                 }
             }
-            orderDetails += `\nTotal: $${total.toFixed(2)} (Physical Payment)`;
+            orderDetails += `\nTotal: ${total.toFixed(2)}€ (Paiement physique)`;
 
-            // Send data back to bot
-            const data = JSON.stringify({ type: 'new_order', content: orderDetails });
-            tg.sendData(data);
-            
-            // Close webapp
+            tg.sendData(JSON.stringify({ type: 'new_order', content: orderDetails }));
             tg.close();
         }
 
-        // --- ADMIN LOGIC ---
+        // --- LOGIQUE ADMIN ---
         function addProduct() {
             const name = document.getElementById('new-name').value;
             const price = parseFloat(document.getElementById('new-price').value);
@@ -267,40 +522,28 @@
                 const newProduct = { id: newId, name, price, category };
                 products.push(newProduct);
                 
-                // Send update to bot
-                const data = JSON.stringify({ type: 'add_product', product: newProduct });
-                tg.sendData(data);
+                tg.sendData(JSON.stringify({ type: 'add_product', product: newProduct }));
                 
-                renderCategories();
-                renderProducts();
-                renderAdminList();
-                
-                // Clear inputs
+                // Reset form
                 document.getElementById('new-name').value = '';
                 document.getElementById('new-price').value = '';
-                tg.showPopup({message: "Product added!"});
+                
+                renderCategories(); // Mettre à jour si nouvelle catégorie
+                renderAdminList();
+                tg.showPopup({message: "Produit ajouté !"});
             }
         }
-        
+
         function renderAdminList() {
             const container = document.getElementById('admin-products-list');
             container.innerHTML = '';
             products.forEach(p => {
                 const div = document.createElement('div');
-                div.innerText = `${p.name} - $${p.price} [${p.category}]`;
+                div.style.cssText = "padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;";
+                div.innerHTML = `<span>${p.name}</span> <span>${p.price}€</span>`;
                 container.appendChild(div);
             });
         }
-        
-        // Initial Admin render if tab is opened
-        const adminBtn = document.getElementById('admin-tab-btn');
-        if(adminBtn) {
-            adminBtn.onclick = function() {
-                showTab('admin');
-                renderAdminList();
-            }
-        }
-
     </script>
 </body>
 </html>
