@@ -401,57 +401,77 @@
     </nav>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => tg.close());
+        // --- INITIALISATION ---
+        // On essaie de récupérer l'objet Telegram, mais on ne crash pas si ça échoue (ex: hors Telegram)
+        let tg;
+        try {
+            tg = window.Telegram.WebApp;
+            tg.expand();
+            // On active le bouton retour seulement si on est dans Telegram
+            if(tg.BackButton) {
+                tg.BackButton.show();
+                tg.BackButton.onClick(() => tg.close());
+            }
+        } catch (e) {
+            console.warn("Telegram WebApp script not loaded or blocked (CORS?). Running in standalone mode.");
+            tg = null; // On définit tg comme null si non disponible
+        }
 
-        // Thème
-        document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#f5f5f7');
-        document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#1d1d1f');
-        document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#007aff');
-        document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
-        document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#ffffff');
-        document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint-color || '#86868b');
+        // Thème (On applique les couleurs seulement si tg est dispo, sinon on garde les CSS par défaut)
+        if (tg && tg.themeParams) {
+            document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#f5f5f7');
+            document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#1d1d1f');
+            document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#007aff');
+            document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#86868b');
+        }
 
         let products = [];
         let cart = {};
         let isAdmin = false;
         let currentImageBase64 = null;
 
-        window.onload = async function() {
+        window.onload = function() {
+            // 1. Charger les produits (Mock data)
+            products = [
+                {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food", image: "https://picsum.photos/seed/pizza/400/300"},
+                {id: 2, name: "Burger Deluxe", price: 12.50, category: "Food", image: "https://picsum.photos/seed/burger/400/300"},
+                {id: 3, name: "Coca Cola", price: 2.50, category: "Drinks", image: "https://picsum.photos/seed/coke/400/300"},
+                {id: 4, name: "Orange Juice", price: 3.00, category: "Drinks", image: "https://picsum.photos/seed/juice/400/300"},
+                {id: 5, name: "Tiramisu", price: 5.00, category: "Dessert", image: "https://picsum.photos/seed/tira/400/300"}
+            ];
+            
+            // 2. Vérification Admin (Robuste)
             try {
-                // Données simulées
-                products = [
-                    {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food", image: "https://picsum.photos/seed/pizza/400/300"},
-                    {id: 2, name: "Burger Deluxe", price: 12.50, category: "Food", image: "https://picsum.photos/seed/burger/400/300"},
-                    {id: 3, name: "Coca Cola", price: 2.50, category: "Drinks", image: "https://picsum.photos/seed/coke/400/300"},
-                    {id: 4, name: "Orange Juice", price: 3.00, category: "Drinks", image: "https://picsum.photos/seed/juice/400/300"},
-                    {id: 5, name: "Tiramisu", price: 5.00, category: "Dessert", image: "https://picsum.photos/seed/tira/400/300"}
-                ];
-                
-                // Vérification Admin via URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const adminIdFromUrl = urlParams.get('admin');
-                const userId = tg.initDataUnsafe.user?.id;
+                
+                // Récupération de l'ID utilisateur
+                let userId = null;
+                if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    userId = tg.initDataUnsafe.user.id;
+                } else {
+                    console.warn("Impossible de récupérer l'ID utilisateur Telegram via initDataUnsafe.");
+                }
 
-                // Si l'ID admin est dans l'URL et correspond à l'utilisateur Telegram
+                // Si l'ID admin est dans l'URL et correspond à l'utilisateur (ou si on est en mode test et qu'on veut forcer)
+                // Note: Pour tester sur PC sans Telegram, vous pouvez temporairement ajouter: || adminIdFromUrl === "8005036205"
                 if (adminIdFromUrl && userId && adminIdFromUrl == userId) {
                     isAdmin = true;
                     document.getElementById('nav-admin').style.display = 'flex';
                 }
-
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('main-content').classList.remove('hidden');
-                
-                renderCategories();
-                renderProducts();
-                updateCartBadge();
-
             } catch (e) {
-                console.error(e);
-                document.getElementById('loading').innerHTML = "Erreur de chargement";
+                console.error("Erreur lors de la vérification admin:", e);
             }
+
+            // 3. Afficher l'interface (quel que soit le résultat de la vérif admin)
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            
+            renderCategories();
+            renderProducts();
+            updateCartBadge();
         };
 
         function switchTab(tabName) {
@@ -520,7 +540,8 @@
             if (!cart[productId]) cart[productId] = 0;
             cart[productId]++;
             updateCartBadge();
-            tg.showPopup({message: "Ajouté au panier !"});
+            if(tg) tg.showPopup({message: "Ajouté au panier !"});
+            else alert("Ajouté au panier !"); // Fallback hors app
         }
 
         function updateCartBadge() {
@@ -599,8 +620,13 @@
             }
             orderDetails += `\nTotal: ${total.toFixed(2)}€ (Paiement physique)`;
 
-            tg.sendData(JSON.stringify({ type: 'new_order', content: orderDetails }));
-            tg.close();
+            if (tg) {
+                tg.sendData(JSON.stringify({ type: 'new_order', content: orderDetails }));
+                tg.close();
+            } else {
+                console.log(orderDetails);
+                alert("Commande simulée (console log) car hors de Telegram");
+            }
         }
 
         // --- LOGIQUE ADMIN & IMAGE ---
@@ -630,7 +656,13 @@
                 const newProduct = { id: newId, name, price, category, image: finalImage };
                 products.push(newProduct);
                 
-                tg.sendData(JSON.stringify({ type: 'add_product', product: newProduct }));
+                if (tg) {
+                    tg.sendData(JSON.stringify({ type: 'add_product', product: newProduct }));
+                    tg.showPopup({message: "Produit ajouté !"});
+                } else {
+                    console.log("Produit ajouté:", newProduct);
+                    alert("Produit ajouté (Simulation)");
+                }
                 
                 // Reset form
                 document.getElementById('new-name').value = '';
@@ -641,7 +673,6 @@
                 
                 renderCategories();
                 renderAdminList();
-                tg.showPopup({message: "Produit ajouté !"});
             }
         }
 
