@@ -15,19 +15,23 @@
         .btn-small { padding: 5px 10px; cursor: pointer; }
         .checkout-btn { width: 100%; padding: 15px; background: var(--tg-theme-button-color); color: white; border: none; font-size: 16px; margin-top: 20px; }
         input, select { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        #loading { text-align: center; margin-top: 20px; }
     </style>
 </head>
 <body>
 
+    <!-- Loading Indicator -->
+    <div id="loading">Loading menu...</div>
+
     <!-- Navigation Tabs -->
-    <div id="nav-tabs">
+    <div id="nav-tabs" class="hidden">
         <button class="tab-btn" onclick="showTab('menu')">Menu</button>
         <button class="tab-btn" onclick="showTab('cart')">Cart</button>
         <button class="tab-btn" id="admin-tab-btn" onclick="showTab('admin')" style="display:none;">Admin</button>
     </div>
 
     <!-- MENU TAB -->
-    <div id="menu-tab">
+    <div id="menu-tab" class="hidden">
         <h3>Categories</h3>
         <div id="categories-list"></div>
         <hr>
@@ -70,54 +74,74 @@
         let isAdmin = false;
 
         // --- INITIALIZATION ---
-        window.onload = function() {
-            // Receive data from bot (products list and admin status)
-            const initData = tg.initDataUnsafe;
-            // Simulating data passed via start parameter or a specific command for this demo
-            // In a real scenario, you might fetch this from an API endpoint provided by the bot
-            // Here we assume the bot sends the JSON in the start_param or we fetch it.
-            // For this standalone example, we will use the data passed by the bot in the 'start' command logic
-            // But since we can't easily pass complex JSON in start_param without encoding, 
-            // we will use a placeholder fetch or rely on the bot sending a message with the data.
-            
-            // NOTE: For this script to work seamlessly, the bot sends the data in a specific way.
-            // We will use `tg.sendData` to send data back to bot.
-            
-            // Let's assume we fetch initial data from a hypothetical endpoint
-            // fetch('/api/products').then(res => res.json()).then(data => products = data);
-            
-            // For this demo, we will ask the bot for data via a button or assume it's loaded.
-            // To keep it simple, let's assume the bot sends the data as a JSON string in the start param
-            // or we just hardcode the fetch for the example.
-            
-            // Let's implement a simple fetcher that expects the bot to have served the data
-            // Since this is a standalone HTML example, I will mock the fetch or assume it's passed.
-            
-            // REAL IMPLEMENTATION: The bot should serve this HTML and inject the data into it.
-            // Or the JS makes a fetch request to the bot's server.
-            
-            // For this specific script structure, we will assume the data is passed via 
-            // `tg.initDataUnsafe.start_param` which contains a JSON string of products.
-            
+        window.onload = async function() {
+            // We use Telegram's BackButton to close the webapp
+            tg.BackButton.show();
+            tg.BackButton.onClick(() => {
+                tg.close();
+            });
+
             try {
-                if (initData.start_param) {
-                    const data = JSON.parse(initData.start_param);
-                    products = data.products;
-                    isAdmin = data.isAdmin;
-                    if(isAdmin) document.getElementById('admin-tab-btn').style.display = 'inline-block';
-                    renderCategories();
-                    renderProducts();
-                } else {
-                    // Fallback for testing if opened directly without start_param
-                    products = [
-                        {id: 1, name: "Pizza", price: 10, category: "Food"},
-                        {id: 2, name: "Coke", price: 2, category: "Drinks"}
-                    ];
-                    renderCategories();
-                    renderProducts();
+                // Fetch data from the bot using the initData
+                // We use a public API or a simple fetch to a backend. 
+                // Since we don't have a backend server here, we will simulate the data fetch
+                // by asking the bot to send the data via a specific query or using a pre-filled response.
+                
+                // HOWEVER, for this to work without a backend server, we need a trick.
+                // We will use the initData to identify the user, but we can't easily query the bot 
+                // from a static HTML page without CORS issues or a backend.
+                
+                // SOLUTION FOR STATIC HOSTING:
+                // We will assume the bot sends the data in a clever way or we use a mock for now.
+                // But the correct way for a real app is: fetch('https://your-api.com/get_data?user_id=' + tg.initDataUnsafe.user.id)
+                
+                // Since you are hosting on GitHub Pages (static), we cannot easily connect to the bot directly
+                // without a middleware.
+                
+                // ALTERNATIVE: Use a free JSON bin service or similar, OR just hardcode the data here for the demo
+                // if you don't have a backend server.
+                
+                // For this fix, I will assume you might set up a simple endpoint later. 
+                // But to make it work NOW, let's just use the mock data inside the HTML if the fetch fails.
+                
+                // Let's try to fetch from a hypothetical endpoint (which you would need to create)
+                // For now, I will comment out the fetch and use the mock data to ensure it works immediately.
+                
+                /*
+                const response = await fetch('YOUR_API_ENDPOINT_HERE');
+                const data = await response.json();
+                products = data.products;
+                isAdmin = data.isAdmin;
+                */
+
+                // --- MOCK DATA FOR DEMO (Remove this block when you have a real API) ---
+                // In a real scenario, this data comes from your Python backend
+                products = [
+                    {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food"},
+                    {id: 2, name: "Burger Deluxe", price: 12.50, category: "Food"},
+                    {id: 3, name: "Coca Cola", price: 2.50, category: "Drinks"},
+                    {id: 4, name: "Orange Juice", price: 3.00, category: "Drinks"},
+                ];
+                // Check if user is admin (This is insecure for frontend only, but works for demo)
+                // In a real app, the backend determines this.
+                const userId = tg.initDataUnsafe.user?.id;
+                if (userId === 123456789) { // Replace with your ID
+                    isAdmin = true;
                 }
+                // ---------------------------------------------------------------------
+
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('nav-tabs').classList.remove('hidden');
+                document.getElementById('menu-tab').classList.remove('hidden');
+                
+                if(isAdmin) document.getElementById('admin-tab-btn').style.display = 'inline-block';
+                
+                renderCategories();
+                renderProducts();
+
             } catch (e) {
-                console.error("Error parsing start param", e);
+                console.error("Error initializing app", e);
+                document.getElementById('loading').innerText = "Error loading app.";
             }
         };
 
@@ -212,17 +236,17 @@
                 return;
             }
             
-            let orderDetails = "New Order:\\n";
+            let orderDetails = "New Order:\n";
             let total = 0;
             for (const [id, qty] of Object.entries(cart)) {
                 const product = products.find(p => p.id == id);
                 if (product) {
                     const subtotal = product.price * qty;
                     total += subtotal;
-                    orderDetails += `- ${product.name} x${qty}: $${subtotal.toFixed(2)}\\n`;
+                    orderDetails += `- ${product.name} x${qty}: $${subtotal.toFixed(2)}\n`;
                 }
             }
-            orderDetails += `\\nTotal: $${total.toFixed(2)} (Physical Payment)`;
+            orderDetails += `\nTotal: $${total.toFixed(2)} (Physical Payment)`;
 
             // Send data back to bot
             const data = JSON.stringify({ type: 'new_order', content: orderDetails });
@@ -280,4 +304,3 @@
     </script>
 </body>
 </html>
-"""
