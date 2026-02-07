@@ -248,6 +248,18 @@
             display: none;
         }
 
+        /* Bouton Supprimer */
+        .btn-delete {
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
         /* --- BARRE DE NAVIGATION --- */
         .bottom-nav {
             position: fixed;
@@ -402,29 +414,27 @@
 
     <script>
         // --- INITIALISATION ---
-        // On essaie de récupérer l'objet Telegram, mais on ne crash pas si ça échoue (ex: hors Telegram)
         let tg;
         try {
             tg = window.Telegram.WebApp;
             tg.expand();
-            // On active le bouton retour seulement si on est dans Telegram
             if(tg.BackButton) {
                 tg.BackButton.show();
                 tg.BackButton.onClick(() => tg.close());
             }
         } catch (e) {
-            console.warn("Telegram WebApp script not loaded or blocked (CORS?). Running in standalone mode.");
-            tg = null; // On définit tg comme null si non disponible
+            console.warn("Telegram WebApp script not loaded or blocked. Running in standalone mode.");
+            tg = null;
         }
 
-        // Thème (On applique les couleurs seulement si tg est dispo, sinon on garde les CSS par défaut)
+        // Thème
         if (tg && tg.themeParams) {
             document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#f5f5f7');
             document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#1d1d1f');
             document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#007aff');
             document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
             document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#ffffff');
-            document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#86868b');
+            document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint-color || '#86868b');
         }
 
         let products = [];
@@ -433,7 +443,7 @@
         let currentImageBase64 = null;
 
         window.onload = function() {
-            // 1. Charger les produits (Mock data)
+            // Données par défaut (seront écrasées si on arrive à les charger depuis une source externe plus tard)
             products = [
                 {id: 1, name: "Pizza Margherita", price: 10.00, category: "Food", image: "https://picsum.photos/seed/pizza/400/300"},
                 {id: 2, name: "Burger Deluxe", price: 12.50, category: "Food", image: "https://picsum.photos/seed/burger/400/300"},
@@ -442,30 +452,24 @@
                 {id: 5, name: "Tiramisu", price: 5.00, category: "Dessert", image: "https://picsum.photos/seed/tira/400/300"}
             ];
             
-            // 2. Vérification Admin (Robuste)
+            // Vérification Admin
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const adminIdFromUrl = urlParams.get('admin');
                 
-                // Récupération de l'ID utilisateur
                 let userId = null;
                 if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
                     userId = tg.initDataUnsafe.user.id;
-                } else {
-                    console.warn("Impossible de récupérer l'ID utilisateur Telegram via initDataUnsafe.");
                 }
 
-                // Si l'ID admin est dans l'URL et correspond à l'utilisateur (ou si on est en mode test et qu'on veut forcer)
-                // Note: Pour tester sur PC sans Telegram, vous pouvez temporairement ajouter: || adminIdFromUrl === "8005036205"
                 if (adminIdFromUrl && userId && adminIdFromUrl == userId) {
                     isAdmin = true;
                     document.getElementById('nav-admin').style.display = 'flex';
                 }
             } catch (e) {
-                console.error("Erreur lors de la vérification admin:", e);
+                console.error("Erreur vérification admin:", e);
             }
 
-            // 3. Afficher l'interface (quel que soit le résultat de la vérif admin)
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
             
@@ -541,7 +545,7 @@
             cart[productId]++;
             updateCartBadge();
             if(tg) tg.showPopup({message: "Ajouté au panier !"});
-            else alert("Ajouté au panier !"); // Fallback hors app
+            else alert("Ajouté au panier !");
         }
 
         function updateCartBadge() {
@@ -679,19 +683,46 @@
         function renderAdminList() {
             const container = document.getElementById('admin-products-list');
             container.innerHTML = '';
+            
+            if (products.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#888;">Aucun produit.</p>';
+                return;
+            }
+
             products.forEach(p => {
                 const div = document.createElement('div');
-                div.style.cssText = "padding:10px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:10px;";
+                div.style.cssText = "padding:10px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between; gap:10px;";
                 const imgUrl = p.image || "https://picsum.photos/seed/default/50/50";
+                
                 div.innerHTML = `
-                    <img src="${imgUrl}" style="width:40px; height:40px; border-radius:4px; object-fit:cover;">
-                    <div style="flex-grow:1;">
-                        <strong>${p.name}</strong> <span style="font-size:12px; color:#888">(${p.category})</span>
+                    <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+                        <img src="${imgUrl}" style="width:40px; height:40px; border-radius:4px; object-fit:cover; flex-shrink:0;">
+                        <div style="min-width:0;">
+                            <strong style="display:block;">${p.name}</strong>
+                            <span style="font-size:12px; color:#888">${p.category} - ${p.price}€</span>
+                        </div>
                     </div>
-                    <span>${p.price}€</span>
+                    <button class="btn-delete" onclick="deleteProduct(${p.id})">Supprimer</button>
                 `;
                 container.appendChild(div);
             });
+        }
+
+        function deleteProduct(id) {
+            if(confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) {
+                // 1. Envoyer la demande au bot Python
+                if (tg) {
+                    tg.sendData(JSON.stringify({ type: 'delete_product', id: id }));
+                }
+                
+                // 2. Mettre à jour l'affichage local immédiatement
+                products = products.filter(p => p.id !== id);
+                renderAdminList();
+                renderCategories();
+                renderProducts();
+                
+                if(tg) tg.showPopup({message: "Produit supprimé !"});
+            }
         }
     </script>
 </body>
