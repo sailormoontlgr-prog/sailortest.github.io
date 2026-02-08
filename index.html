@@ -7,6 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        /* --- VARIABLES CSS --- */
         :root {
             --tg-theme-bg-color: #f5f5f7;
             --tg-theme-text-color: #1d1d1f;
@@ -30,6 +31,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* --- LOADING --- */
         #loading {
             display: flex;
             flex-direction: column;
@@ -39,6 +41,7 @@
             color: var(--tg-theme-hint-color);
         }
 
+        /* --- HEADER --- */
         header {
             background-color: var(--tg-theme-secondary-bg-color);
             padding: 15px 20px;
@@ -52,6 +55,7 @@
         }
         h1 { margin: 0; font-size: 20px; font-weight: 600; }
 
+        /* --- CONTENU PRINCIPAL --- */
         .container {
             padding: 20px;
             max-width: 600px;
@@ -60,6 +64,7 @@
 
         .hidden { display: none !important; }
 
+        /* --- CATEGORIES --- */
         .category-scroll {
             display: flex;
             overflow-x: auto;
@@ -86,6 +91,7 @@
             border-color: var(--tg-theme-button-color);
         }
 
+        /* --- PRODUITS --- */
         .product-card {
             background: var(--tg-theme-secondary-bg-color);
             border-radius: var(--border-radius);
@@ -137,6 +143,7 @@
             margin-left: 10px;
         }
 
+        /* --- PANIER --- */
         .cart-item {
             background: var(--tg-theme-secondary-bg-color);
             padding: 10px;
@@ -201,6 +208,7 @@
             cursor: pointer;
         }
 
+        /* --- ADMIN --- */
         .form-group { margin-bottom: 15px; }
         .form-input {
             width: 100%;
@@ -263,6 +271,7 @@
             margin-right: 5px;
         }
 
+        /* --- MODALE (POPUP) --- */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -319,6 +328,7 @@
             border-radius: 8px;
         }
 
+        /* --- BARRE DE NAVIGATION --- */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -380,10 +390,12 @@
 </head>
 <body>
 
+    <!-- HEADER -->
     <header>
         <h1 id="page-title">Menu</h1>
     </header>
 
+    <!-- LOADING -->
     <div id="loading">
         <svg width="40" height="40" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <style>.spinner_P7sC{transform-origin:center;animation:spinner_svv2 .75s infinite linear}@keyframes spinner_svv2{100%{transform:rotate(360deg)}}</style>
@@ -392,13 +404,16 @@
         <p style="margin-top:10px">Chargement...</p>
     </div>
 
+    <!-- CONTENU -->
     <div id="main-content" class="container hidden">
         
+        <!-- ONGLET MENU -->
         <div id="menu-tab">
             <div class="category-scroll" id="categories-list"></div>
             <div id="products-list"></div>
         </div>
 
+        <!-- ONGLET PANIER -->
         <div id="cart-tab" class="hidden">
             <div id="cart-items-container">
                 <p style="text-align:center; color:var(--tg-theme-hint-color); margin-top:50px;">Votre panier est vide</p>
@@ -413,6 +428,7 @@
             </div>
         </div>
 
+        <!-- ONGLET ADMIN -->
         <div id="admin-tab" class="hidden">
             <h2 style="margin-top:0">Ajouter un produit</h2>
             <div class="form-group">
@@ -458,6 +474,7 @@
 
     </div>
 
+    <!-- MODALE PRODUIT (Client) -->
     <div id="product-modal" class="modal-overlay hidden" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -475,6 +492,7 @@
         </div>
     </div>
 
+    <!-- MODALE EDITION (Admin) -->
     <div id="edit-modal" class="modal-overlay hidden" onclick="closeEditModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -505,25 +523,28 @@
         </div>
     </div>
 
+    <!-- BARRE DE NAVIGATION -->
     <nav class="bottom-nav">
         <a class="nav-item active" onclick="switchTab('menu')" id="nav-menu">
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             <span>Menu</span>
         </a>
         <a class="nav-item" onclick="switchTab('cart')" id="nav-cart">
-            <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-.9-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
             <span>Panier</span>
             <div id="cart-badge" class="badge">0</div>
         </a>
         <a class="nav-item" onclick="switchTab('admin')" id="nav-admin" style="display:none;">
-            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l-2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6s1.62-3.6 3.6-1.62 3.6 3.6-1.62 3.6-3.6-1.62 3.6-3.6 3.6-1.62 3.6-3.6-1.62 3.6-3.6 3.6-1.62 3.6-3.6 3.6-1.62-3.6-3.6 3.6-1.62 3.6-3.6-3.6-3.6 3.6z"/></svg>
             <span>Admin</span>
         </a>
     </nav>
 
     <script>
         // --- CONFIGURATION API ---
-        const API_URL = window.location.origin; // Vide car le site est sur le même serveur
+        // Comme le HTML est sur le même serveur (GitHub Pages) que le script Python (via l'URL),
+        // on utilise un chemin relatif pour contacter l'API Flask.
+        const API_URL = ""; 
 
         // --- INITIALISATION ---
         let tg = null;
@@ -574,7 +595,7 @@
         // --- FONCTION D'INITIALISATION PRINCIPALE ---
         async function initApp() {
             try {
-                // On demande la liste des produits à votre API locale
+                // On demande la liste des produits à votre API locale (via le chemin relatif)
                 const response = await fetch(`${API_URL}/products`);
                 if (!response.ok) throw new Error("Erreur réseau");
                 
